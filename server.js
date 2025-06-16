@@ -1,11 +1,9 @@
- 
 const express = require('express');
 const multer = require('multer');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
-const adminDb = require('./admin-db');
 
 const app = express();
 const PORT = 3000;
@@ -16,28 +14,39 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Set up SQLite database
-const db = new sqlite3.Database('votes.db', (err) => {
-    if (err) throw err;
-    console.log('Connected to SQLite database.');
+// Set up PostgreSQL database
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL // Set this in your deployment environment
 });
 
-db.run(`CREATE TABLE IF NOT EXISTS votes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+// Create votes table if not exists (PostgreSQL)
+pool.query(`CREATE TABLE IF NOT EXISTS votes (
+    id SERIAL PRIMARY KEY,
     rollNo TEXT NOT NULL,
     candidate TEXT NOT NULL,
     imagePath TEXT NOT NULL,
     status TEXT DEFAULT 'pending',
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-)`);
-
-// Ensure 'status' column exists in votes table
-// (SQLite doesn't support IF NOT EXISTS for columns, so check manually)
-db.all("PRAGMA table_info(votes)", (err, columns) => {
-    if (!columns.some(col => col.name === 'status')) {
-        db.run("ALTER TABLE votes ADD COLUMN status TEXT DEFAULT 'pending'");
-    }
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)`, (err) => {
+    if (err) console.error('Error creating votes table:', err);
 });
+
+// Create admins table if not exists (PostgreSQL)
+pool.query(`CREATE TABLE IF NOT EXISTS admins (
+    id SERIAL PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL
+)`, (err) => {
+    if (err) console.error('Error creating admins table:', err);
+});
+
+// Insert a default admin if not exists
+(async () => {
+    const result = await pool.query('SELECT * FROM admins WHERE email = $1', ['admin@example.com']);
+    if (result.rows.length === 0) {
+        await pool.query('INSERT INTO admins (email, password) VALUES ($1, $2)', ['admin@example.com', 'admin123']);
+    }
+})();
 
 // Set up Multer for file uploads
 const storage = multer.diskStorage({
@@ -52,70 +61,73 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // API endpoint to submit a vote
-app.post('/api/vote', upload.single('studentCard'), (req, res) => {
+app.post('/api/vote', upload.single('studentCard'), async (req, res) => {
     const { rollNo, candidate } = req.body;
     const imagePath = req.file ? req.file.path : null;
     if (!rollNo || !candidate || !imagePath) {
         return res.status(400).json({ error: 'Missing required fields.' });
     }
-    db.run('INSERT INTO votes (rollNo, candidate, imagePath, status) VALUES (?, ?, ?, ?)', [rollNo, candidate, imagePath, 'pending'], function(err) {
-        if (err) return res.status(500).json({ error: 'Database error.' });
+    try {
+        await pool.query('INSERT INTO votes (rollNo, candidate, imagePath, status) VALUES ($1, $2, $3, $4)', [rollNo, candidate, imagePath, 'pending']);
         res.json({ success: true });
-    });
+    } catch (err) {
+        res.status(500).json({ error: 'Database error.' });
+    }
 });
 
 // API endpoint to verify or reject a vote
-app.post('/api/votes/:id/verify', (req, res) => {
+app.post('/api/votes/:id/verify', async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
-    console.log('Attempting to update vote:', { id, status });
     if (!['verified', 'rejected'].includes(status)) {
-        console.log('Invalid status:', status);
         return res.status(400).json({ error: 'Invalid status.' });
     }
-    db.run('UPDATE votes SET status = ? WHERE id = ?', [status, id], function(err) {
-        if (err) {
-            console.log('Database error:', err);
-            return res.status(500).json({ error: 'Database error.' });
-        }
-        if (this.changes === 0) {
-            console.log('No vote found with id:', id);
+    try {
+        const result = await pool.query('UPDATE votes SET status = $1 WHERE id = $2', [status, id]);
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Vote not found.' });
         }
-        console.log('Vote updated successfully:', { id, status });
         res.json({ success: true });
-    });
+    } catch (err) {
+        res.status(500).json({ error: 'Database error.' });
+    }
 });
 
 // API endpoint to get voting results (only verified votes)
-app.get('/api/results', (req, res) => {
-    db.all("SELECT candidate, COUNT(*) as votes FROM votes WHERE status = 'verified' GROUP BY candidate", [], (err, rows) => {
-        if (err) return res.status(500).json({ error: 'Database error.' });
+app.get('/api/results', async (req, res) => {
+    try {
+        const { rows } = await pool.query("SELECT candidate, COUNT(*) as votes FROM votes WHERE status = 'verified' GROUP BY candidate");
         res.json(rows);
-    });
+    } catch (err) {
+        res.status(500).json({ error: 'Database error.' });
+    }
 });
 
 // API endpoint to get all votes (with optional status filter)
-app.get('/api/votes', (req, res) => {
+app.get('/api/votes', async (req, res) => {
     const status = req.query.status;
     let query = 'SELECT * FROM votes';
     let params = [];
     if (status) {
-        query += ' WHERE status = ?';
+        query += ' WHERE status = $1';
         params.push(status);
     }
-    db.all(query, params, (err, rows) => {
-        if (err) return res.status(500).json({ error: 'Database error.' });
+    try {
+        const { rows } = await pool.query(query, params);
         res.json(rows);
-    });
+    } catch (err) {
+        res.status(500).json({ error: 'Database error.' });
+    }
 });
 
 // TEMPORARY: Endpoint to delete all votes
-app.post('/api/clear-votes', (req, res) => {
-    db.run('DELETE FROM votes', function(err) {
-        if (err) return res.status(500).json({ error: 'Database error.' });
+app.post('/api/clear-votes', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM votes');
         res.json({ success: true, message: 'All votes deleted.' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: 'Database error.' });
+    }
 });
 
 // Test POST route to verify backend POST and body parsing
@@ -124,19 +136,21 @@ app.post('/api/test', (req, res) => {
 });
 
 // Admin login endpoint
-app.post('/api/admin-login', (req, res) => {
+app.post('/api/admin-login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password required.' });
     }
-    adminDb.get('SELECT * FROM admins WHERE email = ? AND password = ?', [email, password], (err, row) => {
-        if (err) return res.status(500).json({ error: 'Database error.' });
-        if (row) {
+    try {
+        const result = await pool.query('SELECT * FROM admins WHERE email = $1 AND password = $2', [email, password]);
+        if (result.rows.length > 0) {
             res.json({ success: true });
         } else {
             res.status(401).json({ error: 'Invalid email or password.' });
         }
-    });
+    } catch (err) {
+        res.status(500).json({ error: 'Database error.' });
+    }
 });
 
 app.listen(PORT, () => {
