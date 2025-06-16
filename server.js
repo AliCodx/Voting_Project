@@ -1,4 +1,4 @@
-// app.use(express.static(__dirname));
+ 
 const express = require('express');
 const multer = require('multer');
 const sqlite3 = require('sqlite3').verbose();
@@ -9,7 +9,7 @@ const adminDb = require('./admin-db');
 
 const app = express();
 const PORT = 3000;
-
+app.use(express.static(__dirname));
 // Ensure CORS and body parser are at the very top
 app.use(cors());
 app.use(express.json());
