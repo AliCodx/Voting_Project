@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CR Election Voting</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            flex: 1;
+            width : 25%;
+        }
+        footer {
+            background: #111;
+            color: #fff;
+            text-align: center;
+            padding: 18px 0;
+            font-size: 16px;
+            letter-spacing: 1px;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CR Election Voting</h1>
+        <form id="voteForm">
+            <label for="rollNo">Roll Number:</label>
+            <input type="text" id="rollNo" name="rollNo" required>
+
+            <label for="studentCard">Upload Student Card:</label>
+            <input type="file" id="studentCard" name="studentCard" accept="image/*" required>
+
+            <label>Select Candidate:</label>
+            <div class="candidates">
+                <label><input type="radio" name="candidate" value="Usman" required> Usman</label>
+                <label><input type="radio" name="candidate" value="Ali" required> Ali</label>
+            </div>
+
+            <button type="submit">Vote</button>
+        </form>
+        <div id="result"></div>
+        <a href="results.html" style="display:block;margin-top:20px;text-align:center;font-weight:bold;color:#007bff;">View Election Results</a>
+        <a href="admin-login.html" id="adminBtn" style="position:fixed;top:24px;right:32px;padding:12px 28px;font-size:16px;font-weight:bold;background:#28a745;color:#fff;border:none;border-radius:5px;cursor:pointer;text-decoration:none;z-index:1000;">Admin</a>
+    </div>
+    <footer style="background:#111;color:#fff;text-align:center;padding:6px 0;margin-top:40px;font-size:14px;letter-spacing:1px;">
+        &copy; 2025 CR Election Voting System Created by Ali Abid
+        <a href="https://www.instagram.com/aliabid_here?igsh=MTM5eTZoNmQzendtZw==" target="_blank" style="margin-left:5px;vertical-align:middle;display:inline-block;">
+            <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg" alt="Instagram" style="width:24px;height:24px;filter:invert(1);vertical-align:middle;">
+        </a>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CR Election Results</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>CR Election Results</h1>
+        <div class="vote-summary" style="display:flex;gap:30px;justify-content:center;margin-bottom:20px;">
+            <div style="background:#eafbe7;padding:15px 30px;border-radius:8px;min-width:120px;text-align:center;">
+                <div style="font-size:18px;font-weight:bold;">Usman</div>
+                <div style="font-size:28px;color:#28a745;font-weight:bold;" id="usmanVotes">0</div>
+                <div style="font-size:13px;">Verified Votes</div>
+            </div>
+            <div style="background:#eafbe7;padding:15px 30px;border-radius:8px;min-width:120px;text-align:center;">
+                <div style="font-size:18px;font-weight:bold;">Ali</div>
+                <div style="font-size:28px;color:#28a745;font-weight:bold;" id="aliVotes">0</div>
+                <div style="font-size:13px;">Verified Votes</div>
+            </div>
+            <div style="background:#fdeaea;padding:15px 30px;border-radius:8px;min-width:120px;text-align:center;">
+                <div style="font-size:18px;font-weight:bold;">Rejected</div>
+                <div style="font-size:28px;color:#dc3545;font-weight:bold;" id="rejectedVotes">0</div>
+                <div style="font-size:13px;">Rejected Votes</div>
+            </div>
+        </div>
+        <h2 style="color:#dc3545;text-align:center;margin-top:30px;">Rejected Votes</h2>
+        <div style="display:flex;justify-content:center;">
+            <table id="resultsTable" style="margin:auto;border-collapse:collapse;width:auto;border:2px solid #000;">
+                <thead>
+                    <tr>
+                        <th style="padding: 14px 24px; border:1.5px solid #000;">Roll Number</th>
+                        <th style="padding: 14px 24px; border:1.5px solid #000;">Candidate</th>
+                        <th style="padding: 14px 24px; border:1.5px solid #000;">Student Card</th>
+                        <th style="padding: 14px 24px; border:1.5px solid #000;">Time</th>
+                        <th style="padding: 14px 24px; border:1.5px solid #000;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Results will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+        <script>
+        // Add black border to all table cells (td) dynamically for content rows
+        document.addEventListener('DOMContentLoaded', function() {
+            const table = document.getElementById('resultsTable');
+            if (table) {
+                const observer = new MutationObserver(() => {
+                    table.querySelectorAll('td').forEach(td => {
+                        td.style.border = '1.5px solid #000';
+                        td.style.padding = '14px 24px';
+                    });
+                });
+                observer.observe(table.tBodies[0], { childList: true, subtree: true });
+            }
+        });
+        </script>
+        <button id="refreshBtn" style="margin-top: 10px;">Refresh Results</button>
+    </div>
+    <footer style="background:#111;color:#fff;text-align:center;padding:6px 0;margin-top:40px;font-size:14px;letter-spacing:1px;">
+        &copy; 2025 CR Election Voting System Created by Ali Abid
+        <a href="https://www.instagram.com/aliabid_here?igsh=MTM5eTZoNmQzendtZw==" target="_blank" style="margin-left:5px;vertical-align:middle;display:inline-block;">
+            <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg" alt="Instagram" style="width:24px;height:24px;filter:invert(1);vertical-align:middle;">
+        </a>
+    </footer>
+    <script src="results.js"></script>
+</body>
+</html>

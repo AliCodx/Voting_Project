@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: #fff;
+            padding: 30px 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .admin-login-container h2 {
+            text-align: center;
+            color: #28a745;
+        }
+        .admin-login-container label {
+            display: block;
+            margin-top: 15px;
+            color: #222;
+        }
+        .admin-login-container input[type="email"],
+        .admin-login-container input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .admin-login-container button {
+            width: 100%;
+            padding: 10px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .admin-login-container button:hover {
+            background: #218838;
+        }
+        .admin-login-container #loginResult {
+            margin-top: 15px;
+            text-align: center;
+        }
+        .admin-link-btn {
+            display:inline-block;margin:10px 8px 0 0;padding:8px 18px;background:#28a745;color:#fff;border-radius:4px;text-decoration:none;font-weight:bold;
+        }
+        .admin-link-btn.blue { background:#007bff; }
+    </style>
+</head>
+<body>
+    <div class="admin-login-container">
+        <h2>Admin Login</h2>
+        <form id="adminLoginForm">
+            <label for="adminEmail">Email:</label>
+            <input type="email" id="adminEmail" required>
+            <label for="adminPassword">Password:</label>
+            <input type="password" id="adminPassword" required>
+            <button type="submit">Login</button>
+        </form>
+        <div id="loginResult"></div>
+    </div>
+    <script>
+    document.getElementById('adminLoginForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const email = document.getElementById('adminEmail').value.trim();
+        const password = document.getElementById('adminPassword').value.trim();
+        const loginResult = document.getElementById('loginResult');
+        fetch('http://localhost:3000/api/admin-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                loginResult.style.color = 'green';
+                loginResult.innerHTML = 'Login successful!<br>' +
+                    '<a href="verify.html" class="admin-link-btn">Go to Verify Votes</a>' +
+                    '<a href="votes.html" class="admin-link-btn blue">Go to All Votes</a>';
+                document.getElementById('adminLoginForm').style.display = 'none';
+            } else {
+                loginResult.style.color = 'red';
+                loginResult.textContent = data.error || 'Invalid email or password.';
+            }
+        })
+        .catch(() => {
+            loginResult.style.color = 'red';
+            loginResult.textContent = 'Server error. Please try again.';
+        });
+    });
+    </script>
+</body>
+</html>
